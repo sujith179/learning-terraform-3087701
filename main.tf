@@ -1,17 +1,23 @@
 data "aws_ami" "app_ami" {
   most_recent = true
 
+  owners = ["979382823631"]
+
   filter {
     name   = "name"
-    values = ["bitnami-tomcat-*-x86_64-hvm-ebs-nami"]
+    values = ["*tomcat*"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
   }
 
   filter {
     name   = "virtualization-type"
     values = ["hvm"]
   }
-
-  owners = ["979382823631"] # Bitnami
+  
 }
 
 resource "aws_instance" "web" {
