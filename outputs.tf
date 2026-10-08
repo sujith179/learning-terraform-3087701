@@ -3,5 +3,5 @@ output "instance_ami" {
 }
 
 output "instance_arn" {
-  value = aws_instance.bolg.arn
+  value = aws_instance.blog.arn
 }
