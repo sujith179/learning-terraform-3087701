@@ -19,7 +19,7 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-resource "aws_instance" "web" {
+resource "aws_instance" "blog" {
   ami           = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
 
