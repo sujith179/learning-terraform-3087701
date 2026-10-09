@@ -1,3 +1,4 @@
+```hcl
 provider "aws" {
   region = "us-west-2"
 }
@@ -15,6 +16,7 @@ data "aws_ami" "app_ami" {
 
 module "blog_vpc" {
   source = "terraform-aws-modules/vpc/aws"
+  version = "6.7.3"
 
   name = "dev"
   cidr = "10.0.0.0/16"
@@ -35,11 +37,18 @@ module "blog_sg" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "4.13.0"
 
-  vpc_id = module.blog_vpc.vpc_id
   name   = "blog"
+  vpc_id = module.blog_vpc.vpc_id
 
   ingress_rules       = ["https-443-tcp", "http-80-tcp"]
   ingress_cidr_blocks = ["0.0.0.0/0"]
+
+  # Permit backend traffic between resources using this security group.
+  ingress_with_self = [
+    {
+      rule = "http-8080-tcp"
+    }
+  ]
 
   egress_rules       = ["all-all"]
   egress_cidr_blocks = ["0.0.0.0/0"]
@@ -58,38 +67,54 @@ resource "aws_instance" "blog" {
 }
 
 module "blog_alb" {
-  source = "terraform-aws-modules/alb/aws"
+  source  = "terraform-aws-modules/alb/aws"
+  version = "10.5.1"
 
-  name    = "blog_alb-alb"
-  vpc_id  = vpc-blog_vpc.vpc_id
+  name               = "blog-alb"
+  load_balancer_type = "application"
+
+  vpc_id  = module.blog_vpc.vpc_id
   subnets = module.blog_vpc.public_subnets
 
-  security_group = [module.blog.sg.security_group_id]
+  security_groups = [module.blog_sg.security_group_id]
 
   listeners = {
-    ex-http-https-redirect = {
+    ex-http = {
       port     = 80
       protocol = "HTTP"
+
       forward = {
-       target_groups_arn = aws_lb_target_group.blog.arn
+        target_group_key = "blog"
       }
     }
+  }
 
+  target_groups = {
+    blog = {
+      name             = "blog-tg"
+      protocol         = "HTTP"
+      port             = 8080
+      target_type      = "instance"
+      create_attachment = false
 
+      targets = {
+        blog = {
+          target_id = aws_instance.blog.id
+          port      = 8080
+        }
+      }
+
+      health_check = {
+        enabled  = true
+        protocol = "HTTP"
+        path     = "/"
+        matcher  = "200-399"
+      }
+    }
+  }
 
   tags = {
     Environment = "dev"
   }
 }
-
-resource "aws_lb_target_group" "blog" {
-  name     = "blog"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = module.blog_vpc.vpc_id
-}
-resource "aws_lb_target_group_attachment" "blog" {
-  target_group_arn = aws_lb_target_group.blog.arn
-  target_id        = aws_instance.blog.id
-  port             = 80
-}
+```
