@@ -2,6 +2,7 @@ provider "aws" {
   region = "us-west-2"
 }
 
+
 # Find the latest matching Bitnami Tomcat AMI
 data "aws_ami" "app_ami" {
   most_recent = true
