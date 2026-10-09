@@ -148,4 +148,4 @@ output "instance_public_ip" {
   description = "Public IP address of the Tomcat instance"
   value       = aws_instance.blog.public_ip
 }
-```
+
