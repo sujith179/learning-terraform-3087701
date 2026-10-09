@@ -1,6 +1,4 @@
-provider "aws" {
-  region = "us-west-2"
-}
+
 
 
 # Find the latest matching Bitnami Tomcat AMI
